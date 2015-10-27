@@ -1,7 +1,6 @@
 # Sticky session
 
-A simple performant way to use [socket.io](http://socket.io/) with a
-[cluster](http://nodejs.org/docs/latest/api/cluster.html).
+A simple performant way to use [socket.io][0] with a [cluster][1].
 
 ## Installation
 
@@ -14,34 +13,20 @@ npm install sticky-session
 ```javascript
 var sticky = require('sticky-session');
 
-sticky(require('http').createServer(function(req, res) {
+var server = require('http').createServer(function(req, res) {
   res.end('worker: ' + process.env.NODE_WORKER_ID);
-})).listen(3000, function() {
-  console.log('server started on 3000 port');
 });
+
+if (!sticky.listen(server, 3000)) {
+  // Master code
+  server.once('listening', function() {
+    console.log('server started on 3000 port');
+  });
+} else {
+  // Master code
+}
 ```
 Simple
-
-```javascript
-var sticky = require('sticky-session');
-
-sticky(function() {
-  // This code will be executed only in slave workers
-
-  var http = require('http'),
-      io = require('socket.io');
-
-  var server = http.createServer(function(req, res) {
-    // ....
-  });
-  io.listen(server);
-
-  return server;
-}).listen(3000, function() {
-  console.log('server started on 3000 port');
-});
-```
-Socket.io
 
 ## Reasoning
 
@@ -53,11 +38,19 @@ Sticky-sessions module is balancing requests using their IP address. Thus
 client will always connect to same worker server, and socket.io will work as
 expected, but on multiple processes!
 
+#### Note about `node` version
+
+`sticky-session` requires `node` to be at least `0.12.0` because it relies on
+`net.createServer`'s [`pauseOnConnect` flag][2].
+
+A deeper, step-by-step explanation on how this works can be found in
+[`elad/node-cluster-socket.io`][3]
+
 #### LICENSE
 
 This software is licensed under the MIT License.
 
-Copyright Fedor Indutny, 2012.
+Copyright Fedor Indutny, 2015.
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -77,3 +70,8 @@ NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+[0]: http://socket.io/
+[1]: http://nodejs.org/docs/latest/api/cluster.html
+[2]: https://nodejs.org/api/net.html#net_net_createserver_options_connectionlistener
+[3]: https://github.com/elad/node-cluster-socket.io
